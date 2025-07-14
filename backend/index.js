@@ -1,9 +1,11 @@
 const express = require("express")
-
-let PORT = 4000 || process.env.PORT
+const cors = require("cors")
+let PORT = process.env.PORT || 4000
 const app = express();
 
+app.use(cors({ origin: "*" }));
 app.use(express.json());
+
 
 app.get("/", (req, res) => {
     res.json({ message: "Api is running.", sucess: true })

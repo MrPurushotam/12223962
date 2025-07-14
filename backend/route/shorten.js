@@ -50,13 +50,36 @@ router.get("/:code", async (req, res) => {
         return res.status(410).json({ error: "Short URL expired", success: false });
     }
 
+    const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress;
+
+    let geo = {
+        country: "India",
+        region: "Punjab",
+        city: "Jalandhar"
+    };
+
+    try {
+        const response = await fetch(`http://ip-api.com/json/${ip}`);
+        const data = await response.json();
+        console.log(data)
+        if (data.status === "success") {
+            geo = {
+                country: data.country || "unknown",
+                region: data.regionName || "unknown",
+                city: data.city || "unknown"
+            };
+        }
+    } catch (error) {
+        await logger.log("backend", "warn", "service", `Failed to fetch geo for IP: ${ip}`);
+    }
+
     entry.clicks.push({
         timestamp: new Date().toISOString(),
         referrer: req.headers.referer || "direct",
-        geo: "IN"
+        geo
     });
 
-    await logger.log("backend", "info", "route", `Redirecting to: ${url}`);
+    await logger.log("backend", "info", "route", `Redirecting to ${url} from ${geo.country}, ${geo.city}`);
     res.redirect(url);
 });
 
